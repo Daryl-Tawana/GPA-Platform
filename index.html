@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZARIP — Zimbabwe Agricultural Retained Income Platform</title>
+  <meta name="description" content="A static dashboard modelling net retained income for Zimbabwe smallholder tobacco growers after all costs and deductions." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<button class="mobile-toggle" id="mobile-toggle" aria-label="Toggle navigation">☰</button>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SIDEBAR
+══════════════════════════════════════════════════════════════ -->
+<div class="app-wrapper">
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-acronym">ZARIP</div>
+    <div class="brand-full">Zimbabwe Agricultural<br>Retained Income Platform</div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Select Grower / Scenario</div>
+    <select class="grower-select" id="grower-select" aria-label="Select grower"></select>
+  </div>
+
+  <nav class="sidebar-nav">
+    <button class="nav-item" data-section="sec-overview">
+      <span class="nav-icon">◈</span> Overview
+    </button>
+    <button class="nav-item" data-section="sec-income">
+      <span class="nav-icon">≡</span> Income Dashboard
+    </button>
+    <button class="nav-item" data-section="sec-breakdown">
+      <span class="nav-icon">⊡</span> Cost Breakdown
+    </button>
+    <button class="nav-item" data-section="sec-sensitivity">
+      <span class="nav-icon">⊿</span> Risk &amp; Sensitivity
+    </button>
+    <button class="nav-item" data-section="sec-docs">
+      <span class="nav-icon">⊙</span> Documentation
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div>ZARIP v1.0 · 2024</div>
+    <div>Zimbabwe Smallholder Tobacco<br>Income Model</div>
+    <div style="margin-top:6px;">Static · Client-side · Open source</div>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MAIN CONTENT
+══════════════════════════════════════════════════════════════ -->
+<main class="main-content">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-title" id="topbar-grower">Loading…</div>
+    <div class="topbar-actions">
+      <div class="topbar-meta">
+        <span id="topbar-season">—</span>
+        <span id="topbar-ha">—</span>
+      </div>
+      <span class="topbar-badge">2023/24 Season</span>
+      <button class="btn btn-outline" id="export-btn">↓ Export CSV</button>
+    </div>
+  </div>
+
+  <!-- Error banner (hidden by default) -->
+  <div id="error-banner" class="alert alert-danger" style="display:none;margin:20px 36px;">
+    <span class="alert-icon">⚠</span>
+    <span>Failed to load grower data. Please ensure <code>data/grower-data.json</code> is present and the page is served over HTTP (not opened as a local file). If using GitHub Pages, ensure the file is committed to the repository.</span>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────
+       SECTION 1 — OVERVIEW
+  ────────────────────────────────────────────────────── -->
+  <section class="section active" id="sec-overview">
+    <div class="section-header">
+      <h2>Overview</h2>
+      <p>Smallholder tobacco grower retained income model · Zimbabwe · 2023/2024 season</p>
+    </div>
+
+    <!-- Research Question -->
+    <div class="rq-banner">
+      <div>
+        <div class="rq-label">Central Research Question</div>
+        <div class="rq-text">"How much income does the tobacco grower actually retain after all costs and deductions?"</div>
+      </div>
+    </div>
+
+    <!-- Viability Alert -->
+    <div id="viability-alert" class="alert alert-success">
+      <span class="alert-icon">✓</span><span>Loading…</span>
+    </div>
+
+    <!-- Main Result Card -->
+    <div class="result-card" id="result-card">
+      <div class="result-main">
+        <div class="result-label">Net Retained Income</div>
+        <div class="result-value" id="result-value">—</div>
+        <div class="result-verdict" id="result-verdict"></div>
+      </div>
+      <div class="result-stats">
+        <div class="result-stat">
+          <div class="result-stat-val" id="rs-revenue">—</div>
+          <div class="result-stat-label">Gross Revenue</div>
+        </div>
+        <div class="result-stat">
+          <div class="result-stat-val" id="rs-costs">—</div>
+          <div class="result-stat-label">Production Costs</div>
+        </div>
+        <div class="result-stat">
+          <div class="result-stat-val" id="rs-recovery">—</div>
+          <div class="result-stat-label">Contract Recovery</div>
+        </div>
+        <div class="result-stat">
+          <div class="result-stat-val" id="rs-margin">—</div>
+          <div class="result-stat-label">Profit Margin</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Grid -->
+    <div class="kpi-grid">
+      <div class="kpi-card" id="kpi-gross-rev">
+        <div class="kpi-label">Gross Revenue</div>
+        <div class="kpi-value">—</div>
+        <div class="kpi-sub">—</div>
+      </div>
+      <div class="kpi-card" id="kpi-total-cost">
+        <div class="kpi-label">Total Production Cost</div>
+        <div class="kpi-value">—</div>
+        <div class="kpi-sub">—</div>
+      </div>
+      <div class="kpi-card" id="kpi-recovery">
+        <div class="kpi-label">Contract Recovery</div>
+        <div class="kpi-value">—</div>
+        <div class="kpi-sub">—</div>
+      </div>
+      <div class="kpi-card" id="kpi-net">
+        <div class="kpi-label">Net Retained Income</div>
+        <div class="kpi-value">—</div>
+        <div class="kpi-sub">—</div>
+      </div>
+      <div class="kpi-card" id="kpi-margin">
+        <div class="kpi-label">Profit Margin</div>
+        <div class="kpi-value">—</div>
+        <div class="kpi-sub">—</div>
+      </div>
+      <div class="kpi-card" id="kpi-rev-per-kg">
+        <div class="kpi-label">Revenue per kg</div>
+        <div class="kpi-value">—</div>
+        <div class="kpi-sub">—</div>
+      </div>
+      <div class="kpi-card" id="kpi-cost-per-kg">
+        <div class="kpi-label">Cost per kg</div>
+        <div class="kpi-value">—</div>
+        <div class="kpi-sub">—</div>
+      </div>
+      <div class="kpi-card neutral" id="kpi-break-price">
+        <div class="kpi-label">Break-even Price</div>
+        <div class="kpi-value">—</div>
+        <div class="kpi-sub">—</div>
+      </div>
+    </div>
+
+    <p class="footnote">All values in USD. Data reflects anonymised scenarios for illustrative and analytical purposes. This dashboard is a student research tool and does not constitute financial advice.</p>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────
+       SECTION 2 — INCOME DASHBOARD
+  ────────────────────────────────────────────────────── -->
+  <section class="section" id="sec-income">
+    <div class="section-header">
+      <h2>Income Dashboard</h2>
+      <p>Full income statement from gross revenue to net retained income</p>
+    </div>
+
+    <div class="two-col">
+      <!-- Income Statement -->
+      <div class="panel" style="grid-column: span 2;">
+        <div class="panel-title">Income Statement — Gross Margin to Net Retained Income</div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Line Item</th>
+              <th class="num">Amount (USD)</th>
+            </tr>
+          </thead>
+          <tbody id="income-table-body">
+            <tr><td colspan="2">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Waterfall Chart -->
+    <div class="panel" style="margin-top:0;">
+      <div class="panel-title">Income Waterfall — Revenue to Net Retained</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.75rem;"><span style="width:12px;height:12px;background:var(--leaf);border-radius:2px;display:inline-block;"></span> Revenue</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.75rem;"><span style="width:12px;height:12px;background:var(--amber);border-radius:2px;display:inline-block;"></span> Production Costs</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.75rem;"><span style="width:12px;height:12px;background:var(--tobacco);border-radius:2px;display:inline-block;"></span> Contract Recovery</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.75rem;"><span style="width:12px;height:12px;background:var(--profit-green);border-radius:2px;display:inline-block;"></span> Net (Profit)</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.75rem;"><span style="width:12px;height:12px;background:var(--alert-red);border-radius:2px;display:inline-block;"></span> Net (Loss)</div>
+      </div>
+      <div class="waterfall-wrapper">
+        <div class="waterfall-chart" id="waterfall-chart"></div>
+      </div>
+      <p class="footnote" style="margin-top:12px;">Bar heights are proportional to USD values. All figures represent the selected grower's season.</p>
+    </div>
+
+    <!-- Break-even Panel -->
+    <div class="panel" style="margin-top:0;">
+      <div class="panel-title">Break-even Analysis</div>
+      <div class="three-col">
+        <div>
+          <div class="kpi-label">Break-even Price/kg</div>
+          <div style="font-family:var(--font-display);font-size:1.6rem;font-weight:700;color:var(--tobacco);" id="be-price">—</div>
+          <div id="be-price-status" style="font-size:0.75rem;margin-top:4px;">—</div>
+        </div>
+        <div>
+          <div class="kpi-label">Break-even Yield/ha</div>
+          <div style="font-family:var(--font-display);font-size:1.6rem;font-weight:700;color:var(--tobacco);" id="be-yield">—</div>
+          <div style="font-size:0.75rem;color:var(--mid);margin-top:4px;">Minimum kg per hectare to avoid loss</div>
+        </div>
+        <div>
+          <div class="kpi-label">Average Selling Price</div>
+          <div style="font-family:var(--font-display);font-size:1.6rem;font-weight:700;color:var(--soil);" id="be-avg-price">—</div>
+          <div style="font-size:0.75rem;color:var(--mid);margin-top:4px;">Weighted avg across all channels</div>
+        </div>
+        <div>
+          <div class="kpi-label">Revenue–Cost Gap</div>
+          <div style="font-family:var(--font-display);font-size:1.6rem;font-weight:700;color:var(--soil);" id="be-margin-gap">—</div>
+          <div style="font-size:0.75rem;color:var(--mid);margin-top:4px;">|Revenue − Total Deductibles|</div>
+        </div>
+        <div>
+          <div class="kpi-label">Loan Recovery Ratio</div>
+          <div style="font-family:var(--font-display);font-size:1.6rem;font-weight:700;color:var(--soil);" id="be-lr-ratio">—</div>
+          <div style="font-size:0.75rem;color:var(--mid);margin-top:4px;">Recovery as % of input loan advanced</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────
+       SECTION 3 — BREAKDOWN
+  ────────────────────────────────────────────────────── -->
+  <section class="section" id="sec-breakdown">
+    <div class="section-header">
+      <h2>Cost &amp; Revenue Breakdown</h2>
+      <p>Disaggregated view of where money comes from and where it goes</p>
+    </div>
+
+    <!-- Channel Share -->
+    <div class="panel">
+      <div class="panel-title">Revenue by Sales Channel</div>
+      <div style="margin-bottom:10px;">
+        <div class="share-bar">
+          <div class="share-segment" id="contract-share-bar" style="background:var(--leaf);width:50%;"></div>
+          <div class="share-segment" id="auction-share-bar"  style="background:var(--amber);width:50%;"></div>
+        </div>
+        <div class="share-legend">
+          <div class="share-legend-item">
+            <div class="share-dot" style="background:var(--leaf);"></div>
+            <span>Contract: <strong id="contract-share-pct">—</strong> (<span id="contract-rev-val">—</span>)</span>
+          </div>
+          <div class="share-legend-item">
+            <div class="share-dot" style="background:var(--amber);"></div>
+            <span>Auction: <strong id="auction-share-pct">—</strong> (<span id="auction-rev-val">—</span>)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <!-- Cost Breakdown Bar Chart -->
+      <div class="panel">
+        <div class="panel-title">Production Cost Breakdown</div>
+        <div class="bar-chart" id="cost-bar-chart">
+          <div style="color:var(--mid);font-size:0.85rem;">Loading…</div>
+        </div>
+      </div>
+
+      <!-- Deductions & Grade -->
+      <div style="display:flex;flex-direction:column;gap:20px;">
+        <div class="panel">
+          <div class="panel-title">Deductions Waterfall Summary</div>
+          <table class="data-table">
+            <thead>
+              <tr><th>Item</th><th class="num">USD</th><th class="num">Ratio</th></tr>
+            </thead>
+            <tbody id="deductions-table">
+              <tr><td colspan="3">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Quality Grade Assessment</div>
+          <div id="grade-score">Loading…</div>
+          <p class="footnote" style="margin-top:10px;">Grade score (0–100) is an indicative composite of leaf quality, moisture, and classification. Higher grades correlate with price premiums.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────
+       SECTION 4 — SENSITIVITY
+  ────────────────────────────────────────────────────── -->
+  <section class="section" id="sec-sensitivity">
+    <div class="section-header">
+      <h2>Risk &amp; Sensitivity Analysis</h2>
+      <p>Explore how changes in price, yield, and cost affect net retained income</p>
+    </div>
+
+    <!-- Scenario Cards -->
+    <div class="panel">
+      <div class="panel-title">Scenario Comparison</div>
+      <p style="font-size:0.83rem;color:var(--mid);margin-bottom:16px;">
+        <strong>Best case:</strong> price +20%, yield +20%, costs −10% &nbsp;|&nbsp;
+        <strong>Worst case:</strong> price −20%, yield −25%, costs +10%
+      </p>
+      <div class="scenario-grid">
+        <div id="scenario-best"  class="scenario-card best">Loading…</div>
+        <div id="scenario-base"  class="scenario-card base">Loading…</div>
+        <div id="scenario-worst" class="scenario-card worst">Loading…</div>
+      </div>
+    </div>
+
+    <!-- Interactive Sliders -->
+    <div class="panel">
+      <div class="panel-title">Interactive Sensitivity — Adjust Parameters</div>
+      <div class="sens-controls">
+        <div class="sens-field">
+          <div class="sens-label">Price Change</div>
+          <div class="sens-row">
+            <input type="range" class="sens-range" id="price-slider" min="-40" max="40" step="5" value="0" />
+            <span class="sens-display" id="price-display">0%</span>
+          </div>
+          <div style="font-size:0.72rem;color:var(--mid);">Shifts contract and auction prices proportionally</div>
+        </div>
+        <div class="sens-field">
+          <div class="sens-label">Yield Change</div>
+          <div class="sens-row">
+            <input type="range" class="sens-range" id="yield-slider" min="-50" max="50" step="5" value="0" />
+            <span class="sens-display" id="yield-display">0%</span>
+          </div>
+          <div style="font-size:0.72rem;color:var(--mid);">Adjusts total kg harvested and sold</div>
+        </div>
+        <div class="sens-field">
+          <div class="sens-label">Cost Change</div>
+          <div class="sens-row">
+            <input type="range" class="sens-range" id="cost-slider" min="-30" max="30" step="5" value="0" />
+            <span class="sens-display" id="cost-display">0%</span>
+          </div>
+          <div style="font-size:0.72rem;color:var(--mid);">Scales all variable production costs</div>
+        </div>
+      </div>
+      <div class="kpi-card" id="sensitivity-result" style="max-width:380px;">
+        <div class="kpi-label">Adjusted Net Retained Income</div>
+        <div class="kpi-value">—</div>
+        <div class="kpi-sub">—</div>
+      </div>
+    </div>
+
+    <!-- Price Sensitivity Table -->
+    <div class="panel">
+      <div class="panel-title">Price Sensitivity Table</div>
+      <p style="font-size:0.82rem;color:var(--mid);margin-bottom:14px;">How net retained income changes as prices shift from the base case (yield and costs held constant).</p>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Price Shift</th>
+            <th class="num">Avg Price/kg</th>
+            <th class="num">Gross Revenue</th>
+            <th class="num">Net Retained</th>
+            <th class="num">Margin</th>
+          </tr>
+        </thead>
+        <tbody id="price-sens-table">
+          <tr><td colspan="5">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────
+       SECTION 5 — DOCUMENTATION
+  ────────────────────────────────────────────────────── -->
+  <section class="section" id="sec-docs">
+    <div class="section-header">
+      <h2>Documentation &amp; Methodology</h2>
+      <p>Formulas, variable definitions, assumptions, and limitations</p>
+    </div>
+
+    <div class="doc-section">
+      <h3>Purpose of the Dashboard</h3>
+      <p>ZARIP (Zimbabwe Agricultural Retained Income Platform) is a static, client-side analytical dashboard designed to model and visualise the net income retained by smallholder tobacco growers in Zimbabwe after accounting for all production costs, marketing deductions, and contract loan recoveries.</p>
+      <p>The central research question is: <em>"How much income does the tobacco grower actually retain after all costs and deductions?"</em> The dashboard addresses a significant transparency gap in smallholder tobacco value chains, where growers may not have clear visibility into what they actually receive after the contractor, auction floor, and government levy claims are settled.</p>
+    </div>
+
+    <div class="doc-section">
+      <h3>Methodology</h3>
+      <p>The model uses a <strong>farm income and gross margin approach</strong>. The analytical flow is:</p>
+      <ol style="margin:0 0 10px 20px;font-size:0.88rem;line-height:1.8;">
+        <li>Calculate gross revenue from all tobacco sales channels.</li>
+        <li>Subtract all variable production costs (cash-based) to arrive at gross margin.</li>
+        <li>Subtract contract loan recovery to arrive at net retained income.</li>
+        <li>Compare against break-even thresholds to assess viability.</li>
+      </ol>
+      <p>The model is <strong>cash-cost based</strong>. Family labour and own-supply fuelwood are treated as cash costs where values are provided. Non-cash opportunity costs (e.g. land rent foregone) are not modelled.</p>
+    </div>
+
+    <div class="doc-section">
+      <h3>Core Formulas</h3>
+
+      <div class="formula-block">
+        <div class="formula-name">Gross Revenue</div>
+        Gross Revenue = (Contract kg × Contract Price/kg) + (Auction kg × Auction Price/kg)
+      </div>
+
+      <div class="formula-block">
+        <div class="formula-name">Total Production Cost</div>
+        Total Production Cost = Seed + Fertiliser + Chemicals + Labour + Fuelwood/Curing
+                              + Transport + Packaging + Auction Charges + Levies
+      </div>
+
+      <div class="formula-block">
+        <div class="formula-name">Contract Recovery</div>
+        Contract Recovery = Amount deducted by contractor (= Input Loan Advanced, unless partial)
+      </div>
+
+      <div class="formula-block">
+        <div class="formula-name">Net Retained Income</div>
+        Net Retained Income = Gross Revenue − Total Production Cost − Contract Recovery
+      </div>
+
+      <div class="formula-block">
+        <div class="formula-name">Profit Margin (%)</div>
+        Profit Margin = (Net Retained Income / Gross Revenue) × 100
+      </div>
+
+      <div class="formula-block">
+        <div class="formula-name">Cost per kg</div>
+        Cost per kg = Total Production Cost / Total kg Harvested
+      </div>
+
+      <div class="formula-block">
+        <div class="formula-name">Revenue per kg</div>
+        Revenue per kg = Gross Revenue / Total kg Harvested
+      </div>
+
+      <div class="formula-block">
+        <div class="formula-name">Break-even Price per kg</div>
+        Break-even Price/kg = (Total Production Cost + Contract Recovery) / Total kg Harvested
+      </div>
+
+      <div class="formula-block">
+        <div class="formula-name">Break-even Yield per Hectare</div>
+        Break-even Yield/ha = (Total Production Cost + Contract Recovery) / (Avg Selling Price × Hectares Planted)
+      </div>
+
+      <div class="formula-block">
+        <div class="formula-name">Loan Recovery Ratio (%)</div>
+        Loan Recovery Ratio = (Contract Recovery / Input Loan Advanced) × 100
+      </div>
+
+      <div class="formula-block">
+        <div class="formula-name">Channel Revenue Share (%)</div>
+        Channel Share = (Channel Revenue / Total Revenue) × 100
+      </div>
+    </div>
+
+    <div class="doc-section">
+      <h3>Variable Definitions</h3>
+      <table class="data-table">
+        <thead>
+          <tr><th>Variable</th><th>Definition</th><th>Unit</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Grower ID</td><td>Unique identifier for the grower or scenario</td><td>String</td></tr>
+          <tr><td>Season</td><td>Tobacco growing season (e.g. 2023/2024)</td><td>String</td></tr>
+          <tr><td>Hectares Planted</td><td>Total area planted to tobacco in the season</td><td>ha</td></tr>
+          <tr><td>kg Harvested</td><td>Total weight of cured leaf produced</td><td>kg</td></tr>
+          <tr><td>kg Contract</td><td>Quantity sold through contract arrangement</td><td>kg</td></tr>
+          <tr><td>kg Auction</td><td>Quantity sold on the open auction floor</td><td>kg</td></tr>
+          <tr><td>Contract Price/kg</td><td>Price received under the contract scheme</td><td>USD/kg</td></tr>
+          <tr><td>Auction Price/kg</td><td>Average price received on the auction floor</td><td>USD/kg</td></tr>
+          <tr><td>Seed Cost</td><td>Cost of tobacco seed or seedlings</td><td>USD</td></tr>
+          <tr><td>Fertiliser Cost</td><td>All basal and top-dressing fertiliser expenditure</td><td>USD</td></tr>
+          <tr><td>Chemical Cost</td><td>Pesticides, fungicides, and growth regulators</td><td>USD</td></tr>
+          <tr><td>Labour Cost</td><td>Hired labour for land prep, transplanting, topping, harvesting, grading</td><td>USD</td></tr>
+          <tr><td>Fuelwood / Curing Cost</td><td>Cost of wood or energy for flue-curing barns</td><td>USD</td></tr>
+          <tr><td>Transport Cost</td><td>Farm-to-market transport of cured leaf</td><td>USD</td></tr>
+          <tr><td>Packaging Cost</td><td>Baling materials and jute</td><td>USD</td></tr>
+          <tr><td>Auction Charges</td><td>Floor charges levied by the auction floor operator</td><td>USD</td></tr>
+          <tr><td>Levies</td><td>Statutory levies payable to TIMB and other authorities</td><td>USD</td></tr>
+          <tr><td>Input Loan Advanced</td><td>Total loan value provided by contractor at season start</td><td>USD</td></tr>
+          <tr><td>Contract Recovery</td><td>Amount deducted by contractor from sales proceeds</td><td>USD</td></tr>
+          <tr><td>Quality Grade Score</td><td>Indicative composite score of leaf grade (0–100)</td><td>Index</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="doc-section">
+      <h3>Assumptions</h3>
+      <ul>
+        <li>All prices are expressed in <strong>USD</strong>. No currency conversion or inflation adjustment is applied.</li>
+        <li><strong>Family labour</strong> is treated as a cash cost if a value is provided; otherwise it is excluded (understating true economic cost).</li>
+        <li><strong>Fuelwood</strong> is treated as a cash cost. Growers who self-supply wood from their own land may face a lower actual cash outlay, in which case the model will overstate costs slightly.</li>
+        <li>Contract recovery is assumed to equal the full input loan advanced unless a partial recovery is specified.</li>
+        <li>The model does not account for multi-season debt rollover or interest accrual on input loans.</li>
+        <li>Auction charges and levies are as reported by the grower; these can vary by floor and registration status.</li>
+        <li>Yield figures are post-curing (cured leaf weight), not green weight.</li>
+        <li>The quality grade score is an indicative index and does not directly adjust prices in the base model (it is shown for contextual interpretation only).</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h3>Limitations</h3>
+      <ul>
+        <li>The model is <strong>static and illustrative</strong>. It is built from a small set of anonymised scenarios and does not represent a statistically representative sample of Zimbabwe's smallholder tobacco sector.</li>
+        <li>It does not model <strong>non-cash opportunity costs</strong> such as land rent, own capital, or time value of money.</li>
+        <li>Prices are single-season point estimates. Real auction prices vary by grade, date, and floor — averaging masks this variation.</li>
+        <li>The dashboard cannot account for <strong>side-marketing</strong> (where growers sell outside the registered contract), which affects declared revenues and recovery calculations.</li>
+        <li>Contract terms vary considerably by contractor. The model uses a simplified full-recovery assumption that may not reflect partial or renegotiated recoveries.</li>
+        <li>The model does not incorporate <strong>macroeconomic risks</strong> such as exchange rate depreciation, input price inflation, or climate shocks beyond the yield sensitivity slider.</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h3>Technical Architecture</h3>
+      <ul>
+        <li><strong>index.html</strong> — All page structure and section markup</li>
+        <li><strong>style.css</strong> — Responsive layout, typography, and visual theme</li>
+        <li><strong>app.js</strong> — All calculation logic, DOM rendering, and event handling</li>
+        <li><strong>data/grower-data.json</strong> — Static data file with grower records and scenario definitions</li>
+      </ul>
+      <p>The dashboard is fully static and requires no backend, database, or authentication. All calculations occur in the browser. It is deployable to GitHub Pages or any static hosting service by committing the files to a repository.</p>
+    </div>
+
+    <div class="doc-section">
+      <h3>Data Sources and References</h3>
+      <ul>
+        <li>Tobacco Industry and Marketing Board (TIMB), Zimbabwe — levy and registration framework</li>
+        <li>Zimbabwe Tobacco Association (ZTA) — grower advisory publications</li>
+        <li>IFPRI / FAO smallholder tobacco value chain studies (Sub-Saharan Africa)</li>
+        <li>IPEC research programme on agricultural retained income and index-based insurance design</li>
+        <li>Field data: Anonymised grower records, Mashonaland and Manicaland provinces, 2023/2024 season</li>
+      </ul>
+      <p class="footnote">This dashboard is produced as part of an academic research project. All grower data has been anonymised. The dashboard does not constitute financial, legal, or agronomic advice.</p>
+    </div>
+  </section>
+
+</main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
