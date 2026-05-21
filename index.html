@@ -64,6 +64,15 @@
         <span id="topbar-season">—</span>
         <span id="topbar-ha">—</span>
       </div>
+      <div class="topbar-currency">
+        <label class="currency-label" for="currency-select">Currency</label>
+        <select id="currency-select" class="currency-select">
+          <option value="USD">USD equiv</option>
+          <option value="ZWL">ZWL</option>
+        </select>
+        <label class="zwl-rate-label" for="zwl-rate">1 USD =</label>
+        <input id="zwl-rate" class="zwl-rate-input" type="number" min="0.1" step="0.1" value="1.00" />
+      </div>
       <span class="topbar-badge">2023/24 Season</span>
       <button class="btn btn-outline" id="export-btn">↓ Export CSV</button>
     </div>
@@ -168,7 +177,7 @@
       </div>
     </div>
 
-    <p class="footnote">All values in USD. Data reflects anonymised scenarios for illustrative and analytical purposes. This dashboard is a student research tool and does not constitute financial advice.</p>
+    <p class="footnote">All values are shown as USD equivalents by default. Use the currency selector in the top bar to view a ZWL conversion at a custom exchange rate. Zimbabwe tobacco growers are typically paid in USD or foreign currency equivalents; actual local settlement terms vary by contractor, auction floor, and market conditions. Data reflects anonymised scenarios for illustrative and analytical purposes. This dashboard is a student research tool and does not constitute financial advice.</p>
   </section>
 
   <!-- ─────────────────────────────────────────────────────
@@ -188,7 +197,7 @@
           <thead>
             <tr>
               <th>Line Item</th>
-              <th class="num">Amount (USD)</th>
+              <th class="num" id="income-amt-header">Amount (USD equiv.)</th>
             </tr>
           </thead>
           <tbody id="income-table-body">
@@ -292,7 +301,7 @@
           <div class="panel-title">Deductions Waterfall Summary</div>
           <table class="data-table">
             <thead>
-              <tr><th>Item</th><th class="num">USD</th><th class="num">Ratio</th></tr>
+              <tr><th>Item</th><th class="num" id="deductions-amt-header">USD</th><th class="num">Ratio</th></tr>
             </thead>
             <tbody id="deductions-table">
               <tr><td colspan="3">Loading…</td></tr>
@@ -488,10 +497,10 @@
           <tr><td>kg Harvested</td><td>Total weight of cured leaf produced</td><td>kg</td></tr>
           <tr><td>kg Contract</td><td>Quantity sold through contract arrangement</td><td>kg</td></tr>
           <tr><td>kg Auction</td><td>Quantity sold on the open auction floor</td><td>kg</td></tr>
-          <tr><td>Contract Price/kg</td><td>Price received under the contract scheme</td><td>USD/kg</td></tr>
-          <tr><td>Auction Price/kg</td><td>Average price received on the auction floor</td><td>USD/kg</td></tr>
-          <tr><td>Seed Cost</td><td>Cost of tobacco seed or seedlings</td><td>USD</td></tr>
-          <tr><td>Fertiliser Cost</td><td>All basal and top-dressing fertiliser expenditure</td><td>USD</td></tr>
+          <tr><td>Contract Price/kg</td><td>Price received under the contract scheme (USD equivalent)</td><td>USD/kg</td></tr>
+          <tr><td>Auction Price/kg</td><td>Average price received on the auction floor (USD equivalent)</td><td>USD/kg</td></tr>
+          <tr><td>Seed Cost</td><td>Cost of tobacco seed or seedlings</td><td>USD equivalent</td></tr>
+          <tr><td>Fertiliser Cost</td><td>All basal and top-dressing fertiliser expenditure</td><td>USD equivalent</td></tr>
           <tr><td>Chemical Cost</td><td>Pesticides, fungicides, and growth regulators</td><td>USD</td></tr>
           <tr><td>Labour Cost</td><td>Hired labour for land prep, transplanting, topping, harvesting, grading</td><td>USD</td></tr>
           <tr><td>Fuelwood / Curing Cost</td><td>Cost of wood or energy for flue-curing barns</td><td>USD</td></tr>
@@ -509,10 +518,10 @@
     <div class="doc-section">
       <h3>Assumptions</h3>
       <ul>
-        <li>All prices are expressed in <strong>USD</strong>. No currency conversion or inflation adjustment is applied.</li>
+        <li>All prices are expressed as <strong>USD equivalents</strong>. No currency conversion or inflation adjustment is applied, but the model is intended to reflect common Zimbabwe tobacco market pricing practices.</li>
         <li><strong>Family labour</strong> is treated as a cash cost if a value is provided; otherwise it is excluded (understating true economic cost).</li>
         <li><strong>Fuelwood</strong> is treated as a cash cost. Growers who self-supply wood from their own land may face a lower actual cash outlay, in which case the model will overstate costs slightly.</li>
-        <li>Contract recovery is assumed to equal the full input loan advanced unless a partial recovery is specified.</li>
+        <li>Contract recovery is assumed to equal the full input loan advanced unless a partial recovery is specified. Additional contractor deductions are also modelled to reflect fees, transport recovery, grading/inspection, and other contractual deductions.</li>
         <li>The model does not account for multi-season debt rollover or interest accrual on input loans.</li>
         <li>Auction charges and levies are as reported by the grower; these can vary by floor and registration status.</li>
         <li>Yield figures are post-curing (cured leaf weight), not green weight.</li>

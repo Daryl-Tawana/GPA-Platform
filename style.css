@@ -189,6 +189,39 @@ body {
   letter-spacing: 0.04em;
 }
 
+.topbar-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.topbar-currency {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--soil);
+}
+.currency-label {
+  font-weight: 600;
+  color: var(--soil);
+}
+.currency-select,
+.zwl-rate-input {
+  border: 1px solid rgba(26,18,8,0.12);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  background: #fff;
+  color: var(--soil);
+}
+.zwl-rate-label {
+  display: inline-block;
+  color: var(--soil);
+  font-size: 0.75rem;
+}
+
 /* ── Sections ── */
 .section {
   display: none;

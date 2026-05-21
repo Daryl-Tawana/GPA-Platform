@@ -49,6 +49,8 @@ zarip-dashboard/
 4. GitHub will publish the site at `https://<username>.github.io/<repo-name>/`.
 
 > **Important:** The dashboard must be served over HTTP/HTTPS (not opened as a local `file://` URL) for the `fetch()` call to load `data/grower-data.json`. GitHub Pages handles this automatically.
+>
+> **Note:** The sample dataset uses USD-equivalent pricing to reflect typical Zimbabwe tobacco payments, which are often settled in USD or foreign currency equivalents depending on contractor and auction terms.
 
 ---
 

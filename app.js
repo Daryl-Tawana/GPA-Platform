@@ -9,12 +9,15 @@
 let DATA = null;
 let currentGrower = null;
 let sensitivityOverrides = { price: 0, yield: 0, cost: 0 };
+let displayCurrency = 'USD';
+let zwlExchangeRate = 1.0;
 
 // ── Entry Point ───────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   loadData();
   initNav();
   initMobileToggle();
+  initCurrencyControls();
 });
 
 // ── Data Loading ──────────────────────────────────────────────
@@ -92,7 +95,13 @@ function calculate(g, overrides = {}) {
   const totalProductionCost = Object.values(costs).reduce((a, b) => a + b, 0);
 
   // Recovery & Net
-  const contractRecovery = g.contract_recovery;
+  const contractLoanRecovery = g.contract_recovery;
+  const contractDeductions = g.contract_deductions ?? {};
+  const contractorFee = contractDeductions.contractor_fee ?? 0;
+  const transportRecovery = contractDeductions.transport_recovery ?? 0;
+  const gradingFee = contractDeductions.grading_fee ?? 0;
+  const otherContractDeductions = contractDeductions.other ?? 0;
+  const contractRecovery = contractLoanRecovery + contractorFee + transportRecovery + gradingFee + otherContractDeductions;
   const netRetainedIncome = grossRevenue - totalProductionCost - contractRecovery;
 
   // Per-kg metrics
@@ -114,6 +123,8 @@ function calculate(g, overrides = {}) {
   return {
     contractRevenue, auctionRevenue, grossRevenue,
     costs, totalProductionCost, contractRecovery,
+    contractLoanRecovery, contractorFee, transportRecovery,
+    gradingFee, otherContractDeductions,
     netRetainedIncome,
     avgSellingPrice, costPerKg, revenuePerKg,
     breakEvenPricePerKg, breakEvenYieldPerHa,
@@ -133,12 +144,19 @@ function renderAll(g, m) {
   renderIncomeDashboard(g, m);
   renderBreakdown(g, m);
   renderSensitivity(g, m);
+  updateCurrencyHeaders();
   updateExportButton(g, m);
 }
 
 // ── Format Helpers ────────────────────────────────────────────
 const fmt = (n, d = 2) => n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
-const fmtUSD = n => `$${fmt(Math.abs(n))}`;
+const fmtMoney = n => {
+  const scaled = Math.abs(n) * (displayCurrency === 'ZWL' ? zwlExchangeRate : 1);
+  const symbol = displayCurrency === 'USD' ? '$' : 'ZWL ';
+  return `${symbol}${fmt(scaled)}`;
+};
+const fmtMoneyKg = n => `${fmtMoney(n)}/kg`;
+const fmtCurrencyLabel = () => displayCurrency === 'USD' ? 'USD equiv.' : 'ZWL';
 const fmtPct = n => `${fmt(n, 1)}%`;
 const sign = n => n >= 0 ? '+' : '−';
 
@@ -155,7 +173,7 @@ function renderOverview(g, m) {
   const rc = document.getElementById('result-card');
   const rv = document.getElementById('result-value');
   const rd = document.getElementById('result-verdict');
-  rv.textContent = `${sign(m.netRetainedIncome)} ${fmtUSD(m.netRetainedIncome)}`;
+  rv.textContent = `${sign(m.netRetainedIncome)} ${fmtMoney(m.netRetainedIncome)}`;
   rv.className = 'result-value ' + (m.isProfitable ? 'profit' : 'loss');
   rd.textContent = m.isProfitable
     ? `The grower retained a net income above all costs and deductions.`
@@ -163,9 +181,9 @@ function renderOverview(g, m) {
 
   // Result stats
   setText('rs-margin',   fmtPct(m.profitMargin));
-  setText('rs-revenue',  fmtUSD(m.grossRevenue));
-  setText('rs-costs',    fmtUSD(m.totalProductionCost));
-  setText('rs-recovery', fmtUSD(m.contractRecovery));
+  setText('rs-revenue',  fmtMoney(m.grossRevenue));
+  setText('rs-costs',    fmtMoney(m.totalProductionCost));
+  setText('rs-recovery', fmtMoney(m.contractRecovery));
 
   // Alert banner
   const alertEl = document.getElementById('viability-alert');
@@ -194,9 +212,9 @@ function renderIncomeDashboard(g, m) {
   const tbody = document.getElementById('income-table-body');
   tbody.innerHTML = `
     <tr><td colspan="2" style="padding-top:14px;font-weight:600;color:var(--sage);font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;">REVENUE</td></tr>
-    <tr><td>Contract sales (${fmt(m.kgContractAdj,0)} kg × ${fmtUSD(m.contractPrice)}/kg)</td><td class="num">${fmtUSD(m.contractRevenue)}</td></tr>
-    <tr><td>Auction sales (${fmt(m.kgAuctionAdj,0)} kg × ${fmtUSD(m.auctionPrice)}/kg)</td><td class="num">${fmtUSD(m.auctionRevenue)}</td></tr>
-    <tr class="total-row"><td>Gross Revenue</td><td class="num positive">${fmtUSD(m.grossRevenue)}</td></tr>
+    <tr><td>Contract sales (${fmt(m.kgContractAdj,0)} kg × ${fmtMoneyKg(m.contractPrice)})</td><td class="num">${fmtMoney(m.contractRevenue)}</td></tr>
+    <tr><td>Auction sales (${fmt(m.kgAuctionAdj,0)} kg × ${fmtMoneyKg(m.auctionPrice)})</td><td class="num">${fmtMoney(m.auctionRevenue)}</td></tr>
+    <tr class="total-row"><td>Gross Revenue</td><td class="num positive">${fmtMoney(m.grossRevenue)}</td></tr>
     <tr><td colspan="2" style="padding-top:14px;font-weight:600;color:var(--amber);font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;">PRODUCTION COSTS</td></tr>
     ${costRow('Seed', m.costs.seed)}
     ${costRow('Fertiliser', m.costs.fertilizer)}
@@ -257,7 +275,7 @@ function renderWaterfall(m) {
   steps.forEach(s => {
     const pct = Math.min(Math.abs(s.value) / maxVal, 1);
     const h   = Math.max(pct * chartH, 4);
-    const valStr = `${s.value >= 0 ? '' : '−'}$${Math.abs(s.value).toFixed(0)}`;
+    const valStr = `${s.value >= 0 ? '' : '−'}${fmtMoney(Math.abs(s.value))}`;
     html += `
       <div class="wf-bar-group" style="min-width:80px;">
         <div style="height:${chartH}px;display:flex;align-items:flex-end;width:100%;">
@@ -279,8 +297,8 @@ function renderBreakdown(g, m) {
   document.getElementById('auction-share-bar').style.width  = `${m.auctionShare}%`;
   setText('contract-share-pct', `${fmt(m.contractShare,1)}%`);
   setText('auction-share-pct',  `${fmt(m.auctionShare,1)}%`);
-  setText('contract-rev-val',   fmtUSD(m.contractRevenue));
-  setText('auction-rev-val',    fmtUSD(m.auctionRevenue));
+  setText('contract-rev-val',   fmtMoney(m.contractRevenue));
+  setText('auction-rev-val',    fmtMoney(m.auctionRevenue));
 
   // Cost breakdown bar chart
   const costItems = [
@@ -305,7 +323,7 @@ function renderBreakdown(g, m) {
           <span class="bar-pct">${fmtPct(ci.val/m.totalProductionCost*100)}</span>
         </div>
       </div>
-      <div class="bar-val">${fmtUSD(ci.val)}</div>
+      <div class="bar-val">${fmtMoney(ci.val)}</div>
     </div>
   `).join('');
 
@@ -313,9 +331,14 @@ function renderBreakdown(g, m) {
   const dtb = document.getElementById('deductions-table');
   dtb.innerHTML = `
     <tr><td>Gross Revenue</td><td class="num positive">${fmtUSD(m.grossRevenue)}</td><td class="num">—</td></tr>
-    <tr><td>Less: Total Production Cost</td><td class="num negative">(${fmtUSD(m.totalProductionCost)})</td><td class="num">${fmtPct(m.totalProductionCost/m.grossRevenue*100)} of revenue</td></tr>
-    <tr><td>Less: Contract Recovery</td><td class="num negative">(${fmtUSD(m.contractRecovery)})</td><td class="num">${g.input_loan_advanced ? fmtPct(m.loanRecoveryRatio) + ' of loan' : 'N/A'}</td></tr>
-    <tr class="total-row"><td>Net Retained Income</td><td class="num ${m.isProfitable?'positive':'negative'}">${sign(m.netRetainedIncome)} ${fmtUSD(m.netRetainedIncome)}</td><td class="num">${fmtPct(Math.abs(m.profitMargin))} ${m.isProfitable?'margin':'loss rate'}</td></tr>
+    <tr><td>Less: Total Production Cost</td><td class="num negative">(${fmtMoney(m.totalProductionCost)})</td><td class="num">${fmtPct(m.totalProductionCost/m.grossRevenue*100)} of revenue</td></tr>
+    <tr><td>Less: Contract loan recovered</td><td class="num negative">(${fmtMoney(m.contractLoanRecovery)})</td><td class="num">${g.input_loan_advanced ? fmtPct(m.loanRecoveryRatio) + ' of loan' : 'N/A'}</td></tr>
+    ${m.contractorFee ? `<tr><td>Less: Contractor fee</td><td class="num negative">(${fmtMoney(m.contractorFee)})</td><td class="num">${fmtPct(m.contractorFee/m.grossRevenue*100)} of revenue</td></tr>` : ''}
+    ${m.transportRecovery ? `<tr><td>Less: Transport recovery</td><td class="num negative">(${fmtMoney(m.transportRecovery)})</td><td class="num">${fmtPct(m.transportRecovery/m.grossRevenue*100)} of revenue</td></tr>` : ''}
+    ${m.gradingFee ? `<tr><td>Less: Grading / inspection fee</td><td class="num negative">(${fmtMoney(m.gradingFee)})</td><td class="num">${fmtPct(m.gradingFee/m.grossRevenue*100)} of revenue</td></tr>` : ''}
+    ${m.otherContractDeductions ? `<tr><td>Less: Other contractor deductions</td><td class="num negative">(${fmtMoney(m.otherContractDeductions)})</td><td class="num">${fmtPct(m.otherContractDeductions/m.grossRevenue*100)} of revenue</td></tr>` : ''}
+    <tr><td class="total-row">Total Contract Recovery</td><td class="num negative">(${fmtMoney(m.contractRecovery)})</td><td class="num">—</td></tr>
+    <tr class="total-row"><td>Net Retained Income</td><td class="num ${m.isProfitable?'positive':'negative'}">${sign(m.netRetainedIncome)} ${fmtMoney(m.netRetainedIncome)}</td><td class="num">${fmtPct(Math.abs(m.profitMargin))} ${m.isProfitable?'margin':'loss rate'}</td></tr>
   `;
 
   // Grade score
@@ -419,9 +442,9 @@ function renderPriceSensTable(g, m) {
     const isBase = ps === 0;
     return `<tr ${isBase ? 'style="background:var(--parchment);font-weight:600;"' : ''}>
       <td>${ps >= 0 ? '+' : ''}${ps}%</td>
-      <td class="num">${fmtUSD(sm.avgSellingPrice)}/kg</td>
-      <td class="num">${fmtUSD(sm.grossRevenue)}</td>
-      <td class="num ${sm.isProfitable ? 'positive' : 'negative'}">${sign(sm.netRetainedIncome)} ${fmtUSD(sm.netRetainedIncome)}</td>
+      <td class="num">${fmtMoneyKg(sm.avgSellingPrice)}</td>
+      <td class="num">${fmtMoney(sm.grossRevenue)}</td>
+      <td class="num ${sm.isProfitable ? 'positive' : 'negative'}">${sign(sm.netRetainedIncome)} ${fmtMoney(sm.netRetainedIncome)}</td>
       <td class="num">${fmtPct(sm.profitMargin)}</td>
     </tr>`;
   }).join('');
@@ -453,6 +476,39 @@ function initMobileToggle() {
   btn?.addEventListener('click', () => sidebar.classList.toggle('open'));
 }
 
+function initCurrencyControls() {
+  const select = document.getElementById('currency-select');
+  const rateInput = document.getElementById('zwl-rate');
+  const rateLabel = document.getElementById('zwl-rate-label');
+
+  if (select) {
+    select.value = displayCurrency;
+    select.addEventListener('change', () => {
+      displayCurrency = select.value;
+      if (rateInput) rateInput.style.display = displayCurrency === 'ZWL' ? 'inline-block' : 'none';
+      if (rateLabel) rateLabel.style.display = displayCurrency === 'ZWL' ? 'inline-block' : 'none';
+      if (currentGrower) renderAll(currentGrower, calculate(currentGrower));
+    });
+  }
+
+  if (rateInput) {
+    rateInput.value = zwlExchangeRate.toFixed(2);
+    rateInput.addEventListener('input', () => {
+      const val = parseFloat(rateInput.value);
+      zwlExchangeRate = Number.isFinite(val) && val > 0 ? val : 1;
+      if (currentGrower) renderAll(currentGrower, calculate(currentGrower));
+    });
+    if (displayCurrency !== 'ZWL' && rateLabel) rateLabel.style.display = 'none';
+  }
+}
+
+function updateCurrencyHeaders() {
+  const incomeHeader = document.getElementById('income-amt-header');
+  const deductionsHeader = document.getElementById('deductions-amt-header');
+  if (incomeHeader) incomeHeader.textContent = `Amount (${fmtCurrencyLabel()})`;
+  if (deductionsHeader) deductionsHeader.textContent = fmtCurrencyLabel();
+}
+
 // ── Export ────────────────────────────────────────────────────
 function updateExportButton(g, m) {
   const btn = document.getElementById('export-btn');
@@ -461,25 +517,29 @@ function updateExportButton(g, m) {
 }
 
 function exportSummary(g, m) {
+  const currency = displayCurrency;
+  const exchangeRate = zwlExchangeRate;
+  const toExport = value => currency === 'ZWL' ? (value * exchangeRate).toFixed(2) : value.toFixed(2);
   const rows = [
-    ['Field', 'Value'],
-    ['Grower', g.name], ['Season', g.season], ['Hectares', g.hectares_planted],
-    ['Kg Harvested', g.kg_harvested], ['Kg Contract', g.kg_contract], ['Kg Auction', g.kg_auction],
-    ['Contract Price/kg', g.contract_price_per_kg], ['Auction Price/kg', g.auction_price_per_kg],
-    ['Contract Revenue', m.contractRevenue.toFixed(2)],
-    ['Auction Revenue', m.auctionRevenue.toFixed(2)],
-    ['Gross Revenue', m.grossRevenue.toFixed(2)],
-    ['Total Production Cost', m.totalProductionCost.toFixed(2)],
-    ['Contract Recovery', m.contractRecovery.toFixed(2)],
-    ['Net Retained Income', m.netRetainedIncome.toFixed(2)],
-    ['Profit Margin %', m.profitMargin.toFixed(2)],
-    ['Revenue per Kg', m.revenuePerKg.toFixed(4)],
-    ['Cost per Kg', m.costPerKg.toFixed(4)],
-    ['Break-even Price/kg', m.breakEvenPricePerKg.toFixed(4)],
-    ['Break-even Yield/ha', m.breakEvenYieldPerHa.toFixed(2)],
-    ['Loan Recovery Ratio %', m.loanRecoveryRatio.toFixed(2)],
-    ['Contract Revenue Share %', m.contractShare.toFixed(2)],
-    ['Auction Revenue Share %', m.auctionShare.toFixed(2)],
+    ['Field', 'Value', 'Currency'],
+    ['Grower', g.name, currency], ['Season', g.season, currency], ['Hectares', g.hectares_planted, currency],
+    ['Kg Harvested', g.kg_harvested, currency], ['Kg Contract', g.kg_contract, currency], ['Kg Auction', g.kg_auction, currency],
+    ['Contract Price/kg', currency === 'ZWL' ? `${toExport(g.contract_price_per_kg)} per kg` : `${g.contract_price_per_kg.toFixed(2)} per kg`, currency],
+    ['Auction Price/kg', currency === 'ZWL' ? `${toExport(g.auction_price_per_kg)} per kg` : `${g.auction_price_per_kg.toFixed(2)} per kg`, currency],
+    ['Contract Revenue', toExport(m.contractRevenue), currency],
+    ['Auction Revenue', toExport(m.auctionRevenue), currency],
+    ['Gross Revenue', toExport(m.grossRevenue), currency],
+    ['Total Production Cost', toExport(m.totalProductionCost), currency],
+    ['Contract Recovery', toExport(m.contractRecovery), currency],
+    ['Net Retained Income', toExport(m.netRetainedIncome), currency],
+    ['Profit Margin %', m.profitMargin.toFixed(2), '%'],
+    ['Revenue per Kg', currency === 'ZWL' ? `${toExport(m.revenuePerKg)} per kg` : `${m.revenuePerKg.toFixed(4)} per kg`, currency],
+    ['Cost per Kg', currency === 'ZWL' ? `${toExport(m.costPerKg)} per kg` : `${m.costPerKg.toFixed(4)} per kg`, currency],
+    ['Break-even Price/kg', currency === 'ZWL' ? `${toExport(m.breakEvenPricePerKg)} per kg` : `${m.breakEvenPricePerKg.toFixed(4)} per kg`, currency],
+    ['Break-even Yield/ha', m.breakEvenYieldPerHa.toFixed(2), 'kg/ha'],
+    ['Loan Recovery Ratio %', m.loanRecoveryRatio.toFixed(2), '%'],
+    ['Contract Revenue Share %', m.contractShare.toFixed(2), '%'],
+    ['Auction Revenue Share %', m.auctionShare.toFixed(2), '%'],
   ];
   const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });

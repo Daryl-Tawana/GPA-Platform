@@ -4,12 +4,12 @@
     "version": "1.0",
     "season": "2023/2024",
     "currency": "USD",
-    "notes": "Data represents anonymised smallholder tobacco growers in Mashonaland and Manicaland provinces."
+    "notes": "Data represents USD-equivalent values for Zimbabwe smallholders in typical contract and auction tobacco markets, including TIMB levies and contractor recoveries."
   },
   "growers": [
     {
       "id": "GRW-001",
-      "name": "Grower A – Mashonaland Central",
+      "name": "Grower A — Mashonaland Central (Contracted Burley)",
       "season": "2023/2024",
       "hectares_planted": 2.5,
       "kg_harvested": 3750,
@@ -19,9 +19,9 @@
       "auction_price_per_kg": 2.45,
       "costs": {
         "seed": 85,
-        "fertilizer": 1200,
-        "chemicals": 420,
-        "labor": 950,
+        "fertilizer": 1180,
+        "chemicals": 430,
+        "labor": 940,
         "fuelwood_curing": 380,
         "transport": 210,
         "packaging": 95,
@@ -30,48 +30,60 @@
       },
       "input_loan_advanced": 2800,
       "contract_recovery": 2800,
+      "contract_deductions": {
+        "contractor_fee": 150,
+        "transport_recovery": 80,
+        "grading_fee": 45,
+        "other": 35
+      },
       "quality_grade_score": 72,
-      "notes": "Base case scenario. Average smallholder with access to contract scheme."
+      "notes": "Base case for a smallholder selling a majority of leaf through a contractor and retaining some direct auction sales."
     },
     {
       "id": "GRW-002",
-      "name": "Grower B – Manicaland (High Input)",
+      "name": "Grower B — Manicaland (High-Input Premium Grade)",
       "season": "2023/2024",
       "hectares_planted": 3.0,
-      "kg_harvested": 5400,
-      "kg_contract": 4000,
-      "kg_auction": 1400,
-      "contract_price_per_kg": 2.95,
-      "auction_price_per_kg": 2.60,
+      "kg_harvested": 5200,
+      "kg_contract": 3900,
+      "kg_auction": 1300,
+      "contract_price_per_kg": 3.10,
+      "auction_price_per_kg": 2.75,
       "costs": {
         "seed": 110,
-        "fertilizer": 1900,
-        "chemicals": 680,
-        "labor": 1350,
+        "fertilizer": 1950,
+        "chemicals": 700,
+        "labor": 1380,
         "fuelwood_curing": 520,
         "transport": 290,
         "packaging": 130,
         "auction_charges": 145,
         "levies": 112
       },
-      "input_loan_advanced": 4200,
-      "contract_recovery": 4200,
-      "quality_grade_score": 81,
-      "notes": "Higher input, higher yield scenario. Well-capitalised smallholder."
+      "input_loan_advanced": 4300,
+      "contract_recovery": 4300,
+      "contract_deductions": {
+        "contractor_fee": 180,
+        "transport_recovery": 95,
+        "grading_fee": 55,
+        "other": 40
+      },
+      "quality_grade_score": 84,
+      "notes": "High-input scenario with premium contract prices and a strong quality batch."
     },
     {
       "id": "GRW-003",
-      "name": "Grower C – Mashonaland West (Low Yield)",
+      "name": "Grower C — Mashonaland West (Low Yield, Drought-Affected)",
       "season": "2023/2024",
       "hectares_planted": 2.0,
-      "kg_harvested": 2200,
-      "kg_contract": 1400,
+      "kg_harvested": 2100,
+      "kg_contract": 1300,
       "kg_auction": 800,
-      "contract_price_per_kg": 2.55,
-      "auction_price_per_kg": 2.20,
+      "contract_price_per_kg": 2.65,
+      "auction_price_per_kg": 2.25,
       "costs": {
         "seed": 70,
-        "fertilizer": 950,
+        "fertilizer": 940,
         "chemicals": 310,
         "labor": 780,
         "fuelwood_curing": 290,
@@ -82,19 +94,25 @@
       },
       "input_loan_advanced": 2200,
       "contract_recovery": 2200,
-      "quality_grade_score": 61,
-      "notes": "Low-yield scenario. Poor season due to erratic rainfall."
+      "contract_deductions": {
+        "contractor_fee": 140,
+        "transport_recovery": 70,
+        "grading_fee": 30,
+        "other": 25
+      },
+      "quality_grade_score": 60,
+      "notes": "Drought-affected season with lower harvest volumes and average auction prices."
     },
     {
       "id": "GRW-004",
-      "name": "Grower D – Mashonaland East (Auction Only)",
+      "name": "Grower D — Eastern Highlands (Auction-Only Smallholder)",
       "season": "2023/2024",
       "hectares_planted": 1.5,
       "kg_harvested": 1800,
       "kg_contract": 0,
       "kg_auction": 1800,
       "contract_price_per_kg": 0,
-      "auction_price_per_kg": 2.50,
+      "auction_price_per_kg": 2.35,
       "costs": {
         "seed": 55,
         "fertilizer": 720,
@@ -109,7 +127,7 @@
       "input_loan_advanced": 0,
       "contract_recovery": 0,
       "quality_grade_score": 65,
-      "notes": "Auction-only grower with no contract arrangement. Higher auction charges."
+      "notes": "Auction-only grower with no contractor loan; production is sold directly to the floor."
     },
     {
       "id": "SCENARIO-BEST",
@@ -134,6 +152,12 @@
       },
       "input_loan_advanced": 2800,
       "contract_recovery": 2800,
+      "contract_deductions": {
+        "contractor_fee": 150,
+        "transport_recovery": 80,
+        "grading_fee": 45,
+        "other": 30
+      },
       "quality_grade_score": 88,
       "notes": "Optimistic scenario: above-average yield, premium prices."
     },
@@ -160,6 +184,12 @@
       },
       "input_loan_advanced": 2800,
       "contract_recovery": 2800,
+      "contract_deductions": {
+        "contractor_fee": 150,
+        "transport_recovery": 80,
+        "grading_fee": 45,
+        "other": 30
+      },
       "quality_grade_score": 52,
       "notes": "Pessimistic scenario: drought-hit yield, depressed prices."
     }
